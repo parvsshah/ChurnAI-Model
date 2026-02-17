@@ -1,0 +1,56 @@
+{
+  "models": {
+    "Telecom": {
+      "model_path": "/Users/parvshah/Documents/Code Files/Customer-churn-prediction/src/pipeline/../../models/telecom_model.pkl",
+      "preprocessor_path": "/Users/parvshah/Documents/Code Files/Customer-churn-prediction/src/pipeline/../../models/telecom_preprocessor.pkl",
+      "columns": [
+        "customerID",
+        "gender",
+        "SeniorCitizen",
+        "Partner",
+        "Dependents",
+        "tenure",
+        "PhoneService",
+        "MultipleLines",
+        "InternetService",
+        "OnlineSecurity",
+        "OnlineBackup",
+        "DeviceProtection",
+        "TechSupport",
+        "StreamingTV",
+        "StreamingMovies",
+        "Contract",
+        "PaperlessBilling",
+        "PaymentMethod",
+        "MonthlyCharges",
+        "TotalCharges",
+        "Churn"
+      ],
+      "target": "Churn",
+      "n_features": 21,
+      "n_samples": 7043,
+      "created_at": "2026-02-06T18:19:29.810378"
+    },
+    "SaaS/Subscription": {
+      "model_path": "/Users/parvshah/Documents/Code Files/Customer-churn-prediction/src/pipeline/../../models/saas_subscription_model.pkl",
+      "preprocessor_path": "/Users/parvshah/Documents/Code Files/Customer-churn-prediction/src/pipeline/../../models/saas_subscription_preprocessor.pkl",
+      "columns": [
+        "Churn",
+        "AccountWeeks",
+        "ContractRenewal",
+        "DataPlan",
+        "DataUsage",
+        "CustServCalls",
+        "DayMins",
+        "DayCalls",
+        "MonthlyCharge",
+        "OverageFee",
+        "RoamMins"
+      ],
+      "target": "Churn",
+      "n_features": 11,
+      "n_samples": 3333,
+      "created_at": "2026-02-06T22:01:55.188708"
+    }
+  }
+}
