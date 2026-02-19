@@ -36,9 +36,10 @@ from recommender.recommender import RecommendationEngine
 app = FastAPI(title="ChurnAI API", version="2.0.0")
 
 # CORS for frontend
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[o.strip() for o in CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -804,13 +805,13 @@ def get_recommendations(process_code: str, user: dict = Depends(get_current_user
             "group": group_name,
             "recommendations": list(data["recommendations"]),
             "customer_count": len(data["customers"]),
-            "customers": data["customers"][:10],  # Limit per group
+            "customers": data["customers"],
         })
     grouped.sort(key=lambda x: x["customer_count"], reverse=True)
 
     # Also return per-customer details (top 20)
     customers = []
-    for _, row in high_risk_df.head(20).iterrows():
+    for _, row in high_risk_df.iterrows():
         customers.append({
             "id": str(row[id_col]) if id_col else f"Row-{row.name}",
             "data": {col: row[col] for col in df.columns if col not in ["Churn_Signals", "Recommendations"]},
@@ -903,4 +904,5 @@ def delete_file(process_code: str, user: dict = Depends(get_current_user)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)

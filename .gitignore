@@ -3,3 +3,16 @@ __pycache__/
 .ipynb_checkpoints/
 .env
 venv/
+
+# macOS
+.DS_Store
+
+# Runtime data
+uploads/
+results/
+output/
+data/processed/
+
+# Build artifacts
+frontend/dist/
+node_modules/

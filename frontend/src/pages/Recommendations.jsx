@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Sparkles, Zap, Target, AlertTriangle, DollarSign,
     FileSpreadsheet, Loader2, AlertCircle, Users, ChevronDown, ChevronUp,
-    ShieldAlert, ShieldCheck, ShieldQuestion, Calendar, Tag
+    ShieldAlert, ShieldCheck, ShieldQuestion, Calendar, Tag, Download, Search, Eye
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -40,6 +45,8 @@ export default function Recommendations() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [expandedGroups, setExpandedGroups] = useState({});
+    const [customerDialogGroup, setCustomerDialogGroup] = useState(null);
+    const [customerSearch, setCustomerSearch] = useState('');
 
     useEffect(() => { loadResults(); }, [category]);
 
@@ -84,6 +91,43 @@ export default function Recommendations() {
     const groups = data?.recommendation_groups || [];
     const customers = data?.high_risk_customers || [];
     const fileInfo = data?.file_info || {};
+
+    // Filtered customers for the dialog search
+    const dialogCustomers = useMemo(() => {
+        if (!customerDialogGroup) return [];
+        const all = customerDialogGroup.customers || [];
+        if (!customerSearch.trim()) return all;
+        const q = customerSearch.toLowerCase();
+        return all.filter(c =>
+            String(c.id).toLowerCase().includes(q) ||
+            (c.risk_level || '').toLowerCase().includes(q) ||
+            String((c.churn_probability * 100).toFixed(1)).includes(q)
+        );
+    }, [customerDialogGroup, customerSearch]);
+
+    // Download customer data as CSV (Per Customer tab)
+    const downloadCSV = useCallback(() => {
+        const rows = customers.map(c => ({
+            id: c.id,
+            churn_probability: (c.churn_probability * 100).toFixed(1) + '%',
+            risk_level: c.risk_level,
+            signals: (c.signals || []).filter(Boolean).join('; '),
+            recommendations: (c.recommendations || []).filter(Boolean).join('; '),
+        }));
+        const headers = ['Customer ID', 'Churn Probability', 'Risk Level', 'Churn Signals', 'Suggested Actions'];
+        const keys = ['id', 'churn_probability', 'risk_level', 'signals', 'recommendations'];
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(r => keys.map(k => `"${String(r[k] || '').replace(/"/g, '""')}"`).join(','))
+        ].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `recommendations_all_${processCode}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [customers, processCode]);
 
     if (loading) {
         return (
@@ -225,13 +269,21 @@ export default function Recommendations() {
                                                         ))}
                                                     </div>
                                                 </div>
-                                                {/* Linked customers */}
+                                                {/* Linked customers — show first 6, then View All button */}
                                                 <div>
-                                                    <p className="text-xs font-medium text-muted-foreground mb-2">
-                                                        Affected Customers <span className="text-muted-foreground/50">({g.customer_count})</span>
-                                                    </p>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="text-xs font-medium text-muted-foreground">
+                                                            Affected Customers <span className="text-muted-foreground/50">({g.customer_count})</span>
+                                                        </p>
+                                                        {g.customers.length > 6 && (
+                                                            <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 text-primary px-2"
+                                                                onClick={() => { setCustomerDialogGroup(g); setCustomerSearch(''); }}>
+                                                                <Eye className="h-3 w-3" /> View All ({g.customers.length})
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {g.customers.map((c, i) => (
+                                                        {g.customers.slice(0, 6).map((c, i) => (
                                                             <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/20 border border-border/30">
                                                                 <Avatar className="h-5 w-5">
                                                                     <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
@@ -240,12 +292,15 @@ export default function Recommendations() {
                                                                 </Avatar>
                                                                 <span className="text-[11px] font-mono">{c.id}</span>
                                                                 <Badge variant="outline" className={`text-[8px] h-4 ${c.risk_level === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                                        'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                                                    'bg-orange-500/10 text-orange-400 border-orange-500/20'
                                                                     }`}>{(c.churn_probability * 100).toFixed(0)}%</Badge>
                                                             </div>
                                                         ))}
-                                                        {g.customer_count > g.customers.length && (
-                                                            <span className="text-[10px] text-muted-foreground self-center">+{g.customer_count - g.customers.length} more</span>
+                                                        {g.customers.length > 6 && (
+                                                            <button className="text-[10px] text-primary hover:text-primary/80 self-center font-medium transition-colors"
+                                                                onClick={() => { setCustomerDialogGroup(g); setCustomerSearch(''); }}>
+                                                                +{g.customers.length - 6} more
+                                                            </button>
                                                         )}
                                                     </div>
                                                 </div>
@@ -258,6 +313,16 @@ export default function Recommendations() {
 
                         {/* ── Per Customer Tab ── */}
                         <TabsContent value="customers" className="mt-4 space-y-3">
+                            {customers.length > 0 && (
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs text-muted-foreground">
+                                        Showing {customers.length} customer{customers.length !== 1 ? 's' : ''}
+                                    </p>
+                                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-border/40" onClick={downloadCSV}>
+                                        <Download className="h-3 w-3" /> Download CSV
+                                    </Button>
+                                </div>
+                            )}
                             {customers.length === 0 ? (
                                 <p className="text-muted-foreground text-sm text-center py-8">No high-risk customers found</p>
                             ) : customers.map((c, idx) => (
@@ -278,7 +343,7 @@ export default function Recommendations() {
                                                 </div>
                                             </div>
                                             <Badge variant="outline" className={`text-xs ${c.risk_level === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                    'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                                'bg-orange-500/10 text-orange-400 border-orange-500/20'
                                                 }`}>{c.risk_level}</Badge>
                                         </div>
 
@@ -317,6 +382,65 @@ export default function Recommendations() {
                     </Tabs>
                 </>
             )}
+
+            {/* ── Customer List Dialog (from Grouped Insights) ── */}
+            <Dialog open={!!customerDialogGroup} onOpenChange={(open) => { if (!open) setCustomerDialogGroup(null); }}>
+                <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="text-base flex items-center gap-2">
+                            <Users className="h-4 w-4 text-primary" />
+                            Affected Customers
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            {customerDialogGroup?.group} · {customerDialogGroup?.customers?.length} customer{customerDialogGroup?.customers?.length !== 1 ? 's' : ''}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                            placeholder="Search by ID, risk level, or probability..."
+                            className="pl-9 h-9 text-xs bg-muted/20 border-border/40"
+                            value={customerSearch}
+                            onChange={(e) => setCustomerSearch(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+
+                    {/* Customer List */}
+                    <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 pr-1" style={{ maxHeight: '50vh' }}>
+                        {dialogCustomers.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">No customers match "{customerSearch}"</p>
+                        ) : dialogCustomers.map((c, i) => (
+                            <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/15 hover:bg-muted/25 border border-transparent hover:border-border/30 transition-colors">
+                                <div className="flex items-center gap-2.5">
+                                    <Avatar className="h-7 w-7">
+                                        <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-medium">
+                                            {String(c.id).slice(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="text-xs font-semibold font-mono">{c.id}</p>
+                                        <p className="text-[10px] text-muted-foreground">{(c.churn_probability * 100).toFixed(1)}% churn probability</p>
+                                    </div>
+                                </div>
+                                <Badge variant="outline" className={`text-[9px] ${c.risk_level === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                        c.risk_level === 'high' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                            c.risk_level === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                    }`}>{c.risk_level}</Badge>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Footer count */}
+                    <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/20">
+                        {dialogCustomers.length} of {customerDialogGroup?.customers?.length} customer{customerDialogGroup?.customers?.length !== 1 ? 's' : ''}
+                        {customerSearch && ' matching'}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
