@@ -1,27 +1,82 @@
-import { useState } from 'react';
-import { Save, RotateCcw, Moon, Palette, Globe } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    Save, RotateCcw, Moon, Palette, Globe, FolderOpen, Plus,
+    Check, ArrowRight, Loader2
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { useCategory } from '@/context/CategoryContext';
+import { useAuth } from '@/context/AuthContext';
+import * as api from '@/services/api';
 
 export default function Settings() {
+    const navigate = useNavigate();
+    const { category: activeCategory, setCategory } = useCategory();
+    const { user, refreshUser } = useAuth();
     const [threshold, setThreshold] = useState([70]);
     const [modelType, setModelType] = useState('random-forest');
     const [notifications, setNotifications] = useState({
         email: true, slack: false, critical: true, weekly: true,
     });
 
+    // Categories tab state
+    const [userCategories, setUserCategories] = useState([]);
+    const [allCategories, setAllCategories] = useState([]);
+    const [newCatName, setNewCatName] = useState('');
+    const [loadingCats, setLoadingCats] = useState(true);
+    const [switching, setSwitching] = useState(null);
+
     const toggleNotif = (key) => setNotifications(p => ({ ...p, [key]: !p[key] }));
+
+    const loadCategories = useCallback(async () => {
+        setLoadingCats(true);
+        try {
+            const [userRes, allRes] = await Promise.all([
+                api.listCategories(),
+                api.listAllCategories(),
+            ]);
+            setUserCategories(userRes.categories || []);
+            setAllCategories(allRes.categories || []);
+        } catch {
+            // silent
+        } finally {
+            setLoadingCats(false);
+        }
+    }, []);
+
+    useEffect(() => { loadCategories(); }, [loadCategories]);
+
+    const userCatNames = userCategories.map(c => c.category_name);
+    const availableCategories = allCategories.filter(name => !userCatNames.includes(name));
+
+    const handleSwitchCategory = async (catName) => {
+        setSwitching(catName);
+        try {
+            await setCategory(catName);
+        } catch { /* silent */ }
+        setSwitching(null);
+    };
+
+    const handleUseExisting = async (catName) => {
+        setSwitching(catName);
+        try {
+            // Register the category for this user (with empty schema — they can set it up later)
+            await api.registerCategory({ name: catName, model_type: 'random_forest', columns: [{ name: 'target', type: 'target' }] });
+            await loadCategories();
+            if (refreshUser) await refreshUser();
+        } catch { /* silent */ }
+        setSwitching(null);
+    };
 
     return (
         <div className="space-y-6">
@@ -30,13 +85,124 @@ export default function Settings() {
                 <p className="text-muted-foreground mt-0.5">Configure your churn prediction system</p>
             </div>
 
-            <Tabs defaultValue="model" className="space-y-4">
+            <Tabs defaultValue="categories" className="space-y-4">
                 <TabsList className="bg-muted/30 border border-border/30">
+                    <TabsTrigger value="categories" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary">Categories</TabsTrigger>
                     <TabsTrigger value="model" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary">Model</TabsTrigger>
                     <TabsTrigger value="thresholds" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary">Thresholds</TabsTrigger>
                     <TabsTrigger value="notifications" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary">Notifications</TabsTrigger>
                     <TabsTrigger value="appearance" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary">Appearance</TabsTrigger>
                 </TabsList>
+
+                {/* Categories Tab */}
+                <TabsContent value="categories" className="space-y-4">
+                    {/* Your Categories */}
+                    <Card className="border-border/40 bg-card/60 backdrop-blur-sm animate-slide-up">
+                        <CardHeader>
+                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                <FolderOpen className="h-4 w-4 text-primary" /> Your Categories
+                            </CardTitle>
+                            <CardDescription>Categories you've registered. Click to switch your active category.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {loadingCats ? (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Loading...
+                                </div>
+                            ) : userCategories.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-2">No categories registered yet. Register one below or from the Upload page.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {userCategories.map((cat) => {
+                                        const isActive = activeCategory === cat.category_name;
+                                        return (
+                                            <div key={cat.id || cat.category_name}
+                                                className={`flex items-center justify-between p-3 rounded-lg border transition-all
+                                                    ${isActive
+                                                        ? 'bg-primary/10 border-primary/30 shadow-sm'
+                                                        : 'bg-muted/10 border-border/30 hover:bg-muted/20'}`}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold
+                                                        ${isActive ? 'bg-primary/20 text-primary' : 'bg-muted/30 text-muted-foreground'}`}>
+                                                        {cat.category_name.slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium">{cat.category_name}</p>
+                                                        <p className="text-[10px] text-muted-foreground">
+                                                            {cat.model_type || 'random_forest'} · {cat.description || 'No description'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {isActive ? (
+                                                        <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">
+                                                            <Check className="h-3 w-3 mr-1" /> Active
+                                                        </Badge>
+                                                    ) : (
+                                                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-border/40"
+                                                            disabled={switching === cat.category_name}
+                                                            onClick={() => handleSwitchCategory(cat.category_name)}>
+                                                            {switching === cat.category_name
+                                                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                                                : 'Switch'}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Available Categories from Other Users */}
+                    {availableCategories.length > 0 && (
+                        <Card className="border-border/40 bg-card/60 backdrop-blur-sm animate-slide-up">
+                            <CardHeader>
+                                <CardTitle className="text-sm font-semibold">Available Categories</CardTitle>
+                                <CardDescription>Categories registered by other users that you can use</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-wrap gap-2">
+                                    {availableCategories.map((catName) => (
+                                        <Button key={catName} variant="outline" size="sm"
+                                            className="h-8 text-xs gap-1.5 border-border/40 hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                                            disabled={switching === catName}
+                                            onClick={() => handleUseExisting(catName)}>
+                                            {switching === catName
+                                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                                : <Plus className="h-3 w-3" />}
+                                            {catName}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Register New */}
+                    <Card className="border-border/40 bg-card/60 backdrop-blur-sm animate-slide-up">
+                        <CardHeader>
+                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                <Plus className="h-4 w-4 text-primary" /> Register New Category
+                            </CardTitle>
+                            <CardDescription>Create a brand new category with schema configuration</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex gap-3">
+                                <Button
+                                    className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 shadow-lg shadow-primary/25 gap-2"
+                                    onClick={() => navigate('/register-category')}>
+                                    <ArrowRight className="h-4 w-4" /> Go to Category Registration
+                                </Button>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-2">
+                                You'll be able to define the schema, column types, and model configuration for your new category.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
                 {/* Model Tab */}
                 <TabsContent value="model" className="space-y-4">

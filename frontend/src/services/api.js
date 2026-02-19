@@ -135,6 +135,12 @@ export async function listCategories() {
     return request('/categories');
 }
 
+export async function listAllCategories() {
+    const res = await fetch(`${API_BASE}/categories/all`);
+    if (!res.ok) throw new Error('Failed to load categories');
+    return res.json();
+}
+
 // ── Dashboard ───────────────────────────────────────────────
 
 export async function getDashboardStats(category) {

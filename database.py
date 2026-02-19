@@ -212,6 +212,16 @@ def get_user_categories(user_id: int) -> list:
         return [dict(r) for r in rows]
 
 
+def get_all_category_names() -> list:
+    """Return all distinct category names across all users."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT category_name FROM user_categories ORDER BY category_name")
+        names = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        return names
+
+
 def get_category_schema(user_id: int, category_name: str) -> dict | None:
     with get_db() as conn:
         cursor = _dict_cursor(conn)

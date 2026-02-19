@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Sparkles, UserPlus, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, UserPlus, Eye, EyeOff, AlertCircle, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,14 +9,7 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 import { useCategory } from '@/context/CategoryContext';
-
-const defaultCategories = [
-    { value: 'Telecom', label: 'Telecom' },
-    { value: 'SaaS', label: 'SaaS / Subscription' },
-    { value: 'Banking', label: 'Banking' },
-    { value: 'Healthcare', label: 'Healthcare' },
-    { value: 'Employee', label: 'Employee Retention' },
-];
+import * as api from '@/services/api';
 
 export default function Register() {
     const navigate = useNavigate();
@@ -27,19 +20,31 @@ export default function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [category, setCategory] = useState('');
+    const [customCategory, setCustomCategory] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [allCategories, setAllCategories] = useState([]);
+    const [loadingCats, setLoadingCats] = useState(true);
+
+    // Fetch all existing categories on mount
+    useEffect(() => {
+        api.listAllCategories()
+            .then(data => setAllCategories(data.categories || []))
+            .catch(() => setAllCategories([]))
+            .finally(() => setLoadingCats(false));
+    }, []);
+
+    const effectiveCategory = category === '__new__' ? customCategory.trim() : category;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         try {
-            const user = await register(username, email, password, name, category || null);
-            // Sync the selected category to CategoryContext
-            if (category) {
-                setCategoryContext(category);
+            await register(username, email, password, name, effectiveCategory || null);
+            if (effectiveCategory) {
+                setCategoryContext(effectiveCategory);
             }
             navigate('/dashboard');
         } catch (err) {
@@ -139,16 +144,35 @@ export default function Register() {
                             </label>
                             <Select value={category} onValueChange={setCategory}>
                                 <SelectTrigger className="bg-muted/30 border-border/50 h-10">
-                                    <SelectValue placeholder="Select a category or skip" />
+                                    <SelectValue placeholder={loadingCats ? 'Loading categories...' : 'Select a category or skip'} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {defaultCategories.map((c) => (
-                                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                    {allCategories.map((cat) => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                     ))}
+                                    {allCategories.length > 0 && (
+                                        <div className="border-t border-border/20 my-1" />
+                                    )}
+                                    <SelectItem value="__new__">
+                                        <span className="flex items-center gap-1.5 text-primary">
+                                            <Plus className="h-3.5 w-3.5" /> Register New Category
+                                        </span>
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
+
+                            {category === '__new__' && (
+                                <Input
+                                    placeholder="Enter new category name (e.g. E-commerce)"
+                                    value={customCategory}
+                                    onChange={(e) => setCustomCategory(e.target.value)}
+                                    className="bg-muted/30 border-border/50 h-10 mt-2"
+                                    autoFocus
+                                />
+                            )}
+
                             <p className="text-[11px] text-muted-foreground">
-                                You can always register for new categories later from the dashboard
+                                You can always manage categories later from Settings
                             </p>
                         </div>
 

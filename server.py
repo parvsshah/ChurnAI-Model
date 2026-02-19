@@ -255,6 +255,13 @@ def list_categories(user: dict = Depends(get_current_user)):
     return {"categories": cats}
 
 
+@app.get("/api/categories/all")
+def list_all_categories():
+    """Public endpoint: return all distinct category names for signup dropdown."""
+    names = db.get_all_category_names()
+    return {"categories": names}
+
+
 # ─── File Upload ──────────────────────────────────────────────
 
 @app.post("/api/upload")
