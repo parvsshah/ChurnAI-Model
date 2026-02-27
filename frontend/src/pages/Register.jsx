@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, Eye, EyeOff, AlertCircle, Loader2, ArrowRight, Plus, ChevronDown } from 'lucide-react';
+import { Sparkles, Eye, EyeOff, AlertCircle, Loader2, ArrowRight, Plus, ChevronDown, Info } from 'lucide-react';
 import { CanvasRevealEffect } from '@/components/ui/canvas-reveal-effect';
 import { CosmicInput } from '@/components/ui/cosmic-input';
 import { useAuth } from '@/context/AuthContext';
@@ -39,6 +39,50 @@ export default function Register() {
     const [loading, setLoading] = useState(false);
     const allCategories = ['Telecom', 'SaaS', 'Banking', 'Healthcare', 'Employee'];
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [showCategoryInfo, setShowCategoryInfo] = useState(false);
+
+    const categoryInfo = [
+        {
+            name: 'Telecom',
+            description: 'Predict customer churn in telecom companies. Analyzes usage patterns, service plans, and customer behavior to identify at-risk subscribers.',
+            target: 'Churn (Yes/No)',
+            format: 'CSV with customer demographics, usage, contract details',
+            useCase: 'Retain mobile, broadband & cable subscribers',
+            model: 'Random Forest',
+        },
+        {
+            name: 'SaaS',
+            description: 'Identify subscription cancellation risk in SaaS products. Tracks engagement metrics, feature adoption, and billing patterns.',
+            target: 'Churned (0/1)',
+            format: 'CSV with subscription, usage, MRR, engagement data',
+            useCase: 'Reduce SaaS subscription cancellations',
+            model: 'Gradient Boosting',
+        },
+        {
+            name: 'Banking',
+            description: 'Detect customers likely to close accounts or stop using banking services. Evaluates transaction history, account balances, and product holdings.',
+            target: 'Exited (0/1)',
+            format: 'CSV with account info, transactions, credit score',
+            useCase: 'Prevent bank account closures & attrition',
+            model: 'Random Forest',
+        },
+        {
+            name: 'Healthcare',
+            description: 'Predict patient disengagement from healthcare plans or providers. Analyzes visit frequency, treatment adherence, and satisfaction scores.',
+            target: 'Churn (Yes/No)',
+            format: 'CSV with patient demographics, visits, claims',
+            useCase: 'Improve patient retention & plan renewals',
+            model: 'Logistic Regression',
+        },
+        {
+            name: 'Employee',
+            description: 'Predict employee attrition and voluntary turnover. Evaluates job satisfaction, compensation, tenure, and performance metrics.',
+            target: 'Attrition (Yes/No)',
+            format: 'CSV with employee info, salary, satisfaction, tenure',
+            useCase: 'Reduce employee turnover & improve retention',
+            model: 'Gradient Boosting',
+        },
+    ];
 
     const effectiveCategory = category === '__new__' ? customCategory.trim() : category;
 
@@ -229,11 +273,54 @@ export default function Register() {
                                 )}
                             </div>
 
+                            {/* Category Info Toggle */}
+                            <div className="space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCategoryInfo(!showCategoryInfo)}
+                                    className="flex items-center gap-1.5 text-[11px] text-white/30 hover:text-white/50 transition-colors"
+                                >
+                                    <Info className="h-3 w-3" />
+                                    {showCategoryInfo ? 'Hide' : 'View'} category details & requirements
+                                </button>
 
-
-                            <p className="text-[11px] text-white/20">
-                                You can always manage categories later from Settings
-                            </p>
+                                {showCategoryInfo && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="rounded-xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm overflow-hidden"
+                                    >
+                                        <div className="divide-y divide-white/[0.04]">
+                                            {categoryInfo.map((cat) => (
+                                                <div key={cat.name} className="p-3 space-y-1.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-xs font-semibold text-white/80">{cat.name}</h4>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#7c5bf0]/15 text-[#a78bfa] font-medium">
+                                                            {cat.model}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[10px] text-white/30 leading-relaxed">{cat.description}</p>
+                                                    <div className="grid grid-cols-3 gap-2 pt-1">
+                                                        <div>
+                                                            <p className="text-[9px] text-white/20 uppercase tracking-wider mb-0.5">Target</p>
+                                                            <p className="text-[10px] text-white/45 font-mono">{cat.target}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] text-white/20 uppercase tracking-wider mb-0.5">Format</p>
+                                                            <p className="text-[10px] text-white/45">{cat.format}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] text-white/20 uppercase tracking-wider mb-0.5">Use Case</p>
+                                                            <p className="text-[10px] text-white/45">{cat.useCase}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Submit */}
