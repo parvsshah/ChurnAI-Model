@@ -192,13 +192,14 @@ export default function Settings() {
                         <CardContent>
                             <div className="flex gap-3">
                                 <Button
-                                    className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 shadow-lg shadow-primary/25 gap-2"
-                                    onClick={() => navigate('/register-category')}>
+                                    disabled
+                                    className="bg-gradient-to-r from-primary/40 to-purple-500/40 shadow-lg shadow-primary/10 gap-2 cursor-not-allowed opacity-60">
                                     <ArrowRight className="h-4 w-4" /> Go to Category Registration
                                 </Button>
+                                <span className="self-center text-xs text-muted-foreground/50 uppercase tracking-wider">Coming Soon</span>
                             </div>
                             <p className="text-[11px] text-muted-foreground mt-2">
-                                You'll be able to define the schema, column types, and model configuration for your new category.
+                                Custom category registration with schema configuration is coming soon.
                             </p>
                         </CardContent>
                     </Card>

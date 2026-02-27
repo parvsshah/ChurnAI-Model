@@ -204,9 +204,9 @@ export default function Dashboard() {
                                     <p className="text-sm text-muted-foreground">No categories registered yet.</p>
                                 </div>
                             )}
-                            <Button variant="outline" className="w-full mt-2 h-11 gap-2 border-primary/30 text-primary hover:bg-primary/5"
-                                onClick={() => navigate('/register-category')}>
+                            <Button variant="outline" disabled className="w-full mt-2 h-11 gap-2 border-border/20 text-muted-foreground/40 cursor-not-allowed opacity-60">
                                 <Plus className="h-4 w-4" /> Register New Category
+                                <span className="ml-auto text-[10px] opacity-50 uppercase">Coming Soon</span>
                             </Button>
                         </CardContent>
                     </Card>
@@ -368,8 +368,8 @@ export default function Dashboard() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Badge variant="secondary" className={`text-[10px] ${proc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                    proc.status === 'failed' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                        'bg-muted/30'}`}>
+                                                proc.status === 'failed' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                    'bg-muted/30'}`}>
                                                 {proc.status}
                                             </Badge>
                                             <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -682,9 +682,9 @@ export default function Dashboard() {
                                     <div className="grid grid-cols-2 gap-1.5">
                                         {validationResult.columns.map((col, i) => (
                                             <div key={i} className={`flex items-center gap-1.5 p-1.5 rounded-md border text-[10px] ${col.status === 'matched' ? 'bg-emerald-500/5 border-emerald-500/15' :
-                                                    col.status === 'missing' && col.required ? 'bg-red-500/5 border-red-500/15' :
-                                                        col.status === 'missing' ? 'bg-amber-500/5 border-amber-500/10' :
-                                                            'bg-muted/10 border-border/20'
+                                                col.status === 'missing' && col.required ? 'bg-red-500/5 border-red-500/15' :
+                                                    col.status === 'missing' ? 'bg-amber-500/5 border-amber-500/10' :
+                                                        'bg-muted/10 border-border/20'
                                                 }`}>
                                                 {col.status === 'matched' ? <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400 shrink-0" /> :
                                                     col.status === 'missing' && col.required ? <XCircle className="h-2.5 w-2.5 text-red-400 shrink-0" /> :

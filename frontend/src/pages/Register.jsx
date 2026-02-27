@@ -37,16 +37,8 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [allCategories, setAllCategories] = useState([]);
-    const [loadingCats, setLoadingCats] = useState(true);
+    const allCategories = ['Telecom', 'SaaS', 'Banking', 'Healthcare', 'Employee'];
     const [dropdownOpen, setDropdownOpen] = useState(false);
-
-    useEffect(() => {
-        api.listAllCategories()
-            .then((data) => setAllCategories(data.categories || []))
-            .catch(() => setAllCategories([]))
-            .finally(() => setLoadingCats(false));
-    }, []);
 
     const effectiveCategory = category === '__new__' ? customCategory.trim() : category;
 
@@ -205,11 +197,7 @@ export default function Register() {
                                     className="w-full backdrop-blur-sm bg-white/[0.04] text-white border-b-2 border-white/10 py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#7c5bf0]/60 transition-all flex items-center justify-between text-left cursor-pointer"
                                 >
                                     <span className={category ? 'text-white' : 'text-white/25'}>
-                                        {loadingCats
-                                            ? 'Loading categories...'
-                                            : category === '__new__'
-                                                ? '+ Register New Category'
-                                                : category || 'Select a category or skip'}
+                                        {category || 'Select a category or skip'}
                                     </span>
                                     <ChevronDown className={`h-4 w-4 text-white/30 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
@@ -231,27 +219,17 @@ export default function Register() {
                                             </button>
                                         ))}
                                         {allCategories.length > 0 && <div className="border-t border-white/5 my-1" />}
-                                        <button
-                                            type="button"
-                                            onClick={() => { setCategory('__new__'); setDropdownOpen(false); }}
-                                            className="w-full text-left px-4 py-2.5 text-sm text-[#a78bfa] hover:bg-white/5 transition-colors flex items-center gap-1.5"
+                                        <div
+                                            className="w-full text-left px-4 py-2.5 text-sm text-white/20 flex items-center gap-1.5 cursor-not-allowed"
                                         >
                                             <Plus className="h-3.5 w-3.5" /> Register New Category
-                                        </button>
+                                            <span className="ml-auto text-[10px] text-white/15 uppercase tracking-wider">Coming Soon</span>
+                                        </div>
                                     </motion.div>
                                 )}
                             </div>
 
-                            {category === '__new__' && (
-                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                                    <CosmicInput
-                                        label="New Category Name"
-                                        value={customCategory}
-                                        onChange={(e) => setCustomCategory(e.target.value)}
-                                        className="mt-2"
-                                    />
-                                </motion.div>
-                            )}
+
 
                             <p className="text-[11px] text-white/20">
                                 You can always manage categories later from Settings

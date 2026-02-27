@@ -96,8 +96,9 @@ export default function Navbar() {
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => navigate('/register-category')} className="text-primary">
+                                <DropdownMenuItem disabled className="text-muted-foreground/40 cursor-not-allowed">
                                     + Register New Category
+                                    <span className="ml-auto text-[10px] opacity-50">Soon</span>
                                 </DropdownMenuItem>
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
